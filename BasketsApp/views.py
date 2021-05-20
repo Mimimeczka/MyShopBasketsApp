@@ -44,6 +44,20 @@ class BasketViewSet(viewsets.ModelViewSet):
         return Response('Cannot delete basket')
 
 
+def change_basket_value(basket, quantity, product_from_response, operation):
+    previous_sum_basket = float(basket.sum)
+    products_sum = float(quantity) * float(product_from_response['price'])
+    if operation == 'add':
+        actual_sum_basket = previous_sum_basket + products_sum
+    elif operation == 'delete':
+        actual_sum_basket = previous_sum_basket - products_sum
+    else:
+        raise Exception('Wrong action')
+    basket.sum = actual_sum_basket
+    basket.save()
+    return basket
+
+
 @api_view(['POST'])
 def add_product_to_basket(request, basket_id, product_id):
 
@@ -61,19 +75,16 @@ def add_product_to_basket(request, basket_id, product_id):
             to_add = int(product_to_update.quantity) + int(quantity)
             product_to_update.quantity = int(to_add)
             product_to_update.save()
+            break
 
-        else:
-            Product.objects.create(
-                product_id=int(product_from_response['id']),
-                quantity=int(quantity),
-                basket=basket
-            )
+    else:
+        Product.objects.create(
+            product_id=int(product_from_response['id']),
+            quantity=int(quantity),
+            basket=basket
+        )
 
-    previous_sum_basket = float(basket.sum)
-    products_sum = float(quantity) * float(product_from_response['price'])
-    actual_sum_basket = previous_sum_basket + products_sum
-    basket.sum = actual_sum_basket
-    basket.save()
+    change_basket_value(basket, quantity, product_from_response, 'add')
 
     # serializer = BasketSerializer(basket, many=True)
     return Response(f'Product {product_from_response} add to basket')
@@ -102,13 +113,9 @@ def delete_product_from_basket(request, basket_id, product_id):
             else:
                 product_to_update.delete()
 
-    previous_sum_basket = float(basket.sum)
-    products_sum = float(quantity) * float(product_from_response['price'])
-    actual_sum_basket = previous_sum_basket - products_sum
-    basket.sum = actual_sum_basket
-    basket.save()
+    change_basket_value(basket, quantity, product_from_response, 'delete')
 
     # serializer = BasketSerializer(queryset, many=True)
-    return Response(f'działa url basket: {basket}, product: {product}, suma: {basket.sum}')
+    return Response(f'działa url basket: {basket}')
 
 
