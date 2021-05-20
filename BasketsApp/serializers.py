@@ -13,4 +13,4 @@ class BasketSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Basket
-        fields = ['date', 'id', 'sum', 'user_id', 'products']
+        fields = ['date', 'id', 'sum', 'user_id', 'products', 'summarized']

@@ -119,3 +119,12 @@ def delete_product_from_basket(request, basket_id, product_id):
     return Response(serializer.data)
 
 
+@api_view(['GET'])
+def summarize_basket(request, basket_id):
+    basket = get_object_or_404(Basket, id=basket_id)
+    basket.summarized = True
+    basket.save()
+    new_basket = requests.post(f'http://127.0.0.1:8002/api/baskets/?user_id={basket.user_id}')
+    serializer = BasketSerializer(basket, many=False)
+    return Response(serializer.data)
+

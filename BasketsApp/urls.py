@@ -9,4 +9,5 @@ urlpatterns = [
     path('', include(router.urls)),
     path('baskets/<int:basket_id>/add/<int:product_id>/', views.add_product_to_basket, name='add_product_to_basket'),
     path('baskets/<int:basket_id>/delete/<int:product_id>/', views.delete_product_from_basket, name='delete_product_from_basket'),
+    path('baskets/<int:basket_id>/summarize/', views.summarize_basket, name='summarize_basket'),
 ]
