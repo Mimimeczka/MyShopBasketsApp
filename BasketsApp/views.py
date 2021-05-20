@@ -86,8 +86,8 @@ def add_product_to_basket(request, basket_id, product_id):
 
     change_basket_value(basket, quantity, product_from_response, 'add')
 
-    # serializer = BasketSerializer(basket, many=True)
-    return Response(f'Product {product_from_response} add to basket')
+    serializer = BasketSerializer(basket, many=False)
+    return Response(serializer.data)
 
 
 @api_view(['POST'])
@@ -115,7 +115,7 @@ def delete_product_from_basket(request, basket_id, product_id):
 
     change_basket_value(basket, quantity, product_from_response, 'delete')
 
-    # serializer = BasketSerializer(queryset, many=True)
-    return Response(f'działa url basket: {basket}')
+    serializer = BasketSerializer(basket, many=False)
+    return Response(serializer.data)
 
 
