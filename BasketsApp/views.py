@@ -6,6 +6,8 @@ from datetime import date
 import requests
 from rest_framework.decorators import api_view
 from django.shortcuts import get_object_or_404
+from .validators import validator_check_basket_is_summarized, validator_check_content_basket
+from rest_framework import status
 
 
 class BasketViewSet(viewsets.ModelViewSet):
@@ -62,7 +64,11 @@ def change_basket_value(basket, quantity, product_from_response, operation):
 def add_product_to_basket(request, basket_id, product_id):
 
     basket = get_object_or_404(Basket, id=basket_id)
+    validator_check_basket_is_summarized(basket)
     response = requests.get(f'http://127.0.0.1:8001/api/products/{product_id}/')
+    if response.status_code == 404:
+        return Response('Product not found', status=status.HTTP_404_NOT_FOUND)
+
     product_from_response = response.json()
     quantity = request.data['quantity']
 
@@ -94,6 +100,7 @@ def add_product_to_basket(request, basket_id, product_id):
 def delete_product_from_basket(request, basket_id, product_id):
 
     basket = get_object_or_404(Basket, id=basket_id)
+    validator_check_basket_is_summarized(basket)
     response = requests.get(f'http://127.0.0.1:8001/api/products/{product_id}/')
     product_from_response = response.json()
     quantity = request.data['quantity']
@@ -101,8 +108,11 @@ def delete_product_from_basket(request, basket_id, product_id):
     basket_response = requests.get(f'http://127.0.0.1:8002/api/baskets/{basket_id}/')
     product_in_basket = basket_response.json()
 
+    access = False
+
     for product in product_in_basket['products']:
         if product['product_id'] == product_id:
+            access = True
             product_to_update = Product.objects.get(id=product['id'])
             to_update = int(product_to_update.quantity) - int(quantity)
             if to_update > 0:
@@ -110,8 +120,14 @@ def delete_product_from_basket(request, basket_id, product_id):
                 product_to_update.save()
             elif to_update < 0:
                 raise ValueError('Cannot remove more product than you have')
-            else:
+            elif to_update == 0:
                 product_to_update.delete()
+            else:
+                raise ValueError('Wrong value')
+            break
+
+    if not access:
+        raise ValueError('Cannot remove product which is not in the basket')
 
     change_basket_value(basket, quantity, product_from_response, 'delete')
 
@@ -122,6 +138,8 @@ def delete_product_from_basket(request, basket_id, product_id):
 @api_view(['GET'])
 def summarize_basket(request, basket_id):
     basket = get_object_or_404(Basket, id=basket_id)
+    validator_check_basket_is_summarized(basket)
+    validator_check_content_basket(basket_id)
     basket.summarized = True
     basket.save()
     new_basket = requests.post(f'http://127.0.0.1:8002/api/baskets/?user_id={basket.user_id}')
