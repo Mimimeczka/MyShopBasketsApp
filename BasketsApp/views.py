@@ -19,9 +19,6 @@ class BasketViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
-        response = requests.get('http://127.0.0.1:8001/api/products/1/')
-        product = response.json()
-        print(product['price'])
         serializer = BasketSerializer(queryset, many=True)
         return Response(serializer.data)
 
