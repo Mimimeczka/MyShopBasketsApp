@@ -51,7 +51,7 @@ def change_basket_value(basket, quantity, product_from_response, operation):
     elif operation == 'delete':
         actual_sum_basket = previous_sum_basket - products_sum
     else:
-        raise Exception('Wrong action')
+        return Response('Wrong action', status=status.HTTP_401_UNAUTHORIZED)
     basket.sum = actual_sum_basket
     basket.save()
     return basket
@@ -116,15 +116,15 @@ def delete_product_from_basket(request, basket_id, product_id):
                 product_to_update.quantity = int(to_update)
                 product_to_update.save()
             elif to_update < 0:
-                raise ValueError('Cannot remove more product than you have')
+                return Response('Cannot remove more product than you have', status=status.HTTP_401_UNAUTHORIZED)
             elif to_update == 0:
                 product_to_update.delete()
             else:
-                raise ValueError('Wrong value')
+                return Response('Wrong value', status=status.HTTP_401_UNAUTHORIZED)
             break
 
     if not access:
-        raise ValueError('Cannot remove product which is not in the basket')
+        return Response('Cannot remove product which is not in the basket', status=status.HTTP_401_UNAUTHORIZED)
 
     change_basket_value(basket, quantity, product_from_response, 'delete')
 
@@ -132,14 +132,34 @@ def delete_product_from_basket(request, basket_id, product_id):
     return Response(serializer.data)
 
 
+def change_product_value(product_id, quantity):
+    product_response = requests.get(f'http://127.0.0.1:8001/api/products/{product_id}/')
+    my_product = product_response.json()
+    update_product_quantity = my_product['quantity'] - quantity
+    requests.put(f'http://127.0.0.1:8001/api/products/{product_id}/', data={
+        'name': '',
+        'description': '',
+        'price': '',
+        'quantity': update_product_quantity
+    })
+
+
 @api_view(['GET'])
 def summarize_basket(request, basket_id):
     basket = get_object_or_404(Basket, id=basket_id)
     validator_check_basket_is_summarized(basket)
     validator_check_content_basket(basket_id)
+
+    basket_response = requests.get(f'http://127.0.0.1:8002/api/baskets/{basket_id}/')
+    product_in_basket = basket_response.json()
+    for product in product_in_basket['products']:
+        change_product_value(product['product_id'], product['quantity'])
+
     basket.summarized = True
     basket.save()
     new_basket = requests.post(f'http://127.0.0.1:8002/api/baskets/?user_id={basket.user_id}')
+
     serializer = BasketSerializer(basket, many=False)
     return Response(serializer.data)
+
 
