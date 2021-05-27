@@ -136,6 +136,10 @@ def change_product_value(product_id, quantity):
     product_response = requests.get(f'http://127.0.0.1:8001/api/products/{product_id}/')
     my_product = product_response.json()
     update_product_quantity = my_product['quantity'] - quantity
+
+    if update_product_quantity < 0:
+        raise Exception(f"You can not buy this product quantity ({my_product['name']}). Available quantity is: {my_product['quantity']}")
+
     requests.put(f'http://127.0.0.1:8001/api/products/{product_id}/', data={
         'name': '',
         'description': '',
@@ -157,7 +161,7 @@ def summarize_basket(request, basket_id):
 
     basket.summarized = True
     basket.save()
-    new_basket = requests.post(f'http://127.0.0.1:8002/api/baskets/?user_id={basket.user_id}')
+    requests.post(f'http://127.0.0.1:8002/api/baskets/?user_id={basket.user_id}')
 
     serializer = BasketSerializer(basket, many=False)
     return Response(serializer.data)

@@ -8,7 +8,7 @@ class Basket(models.Model):
     summarized = models.BooleanField(default=False)
 
     def __str__(self):
-        return f'Basket ({self.date}), summarized: {self.summarized}'
+        return f'Basket ({self.pk}), summarized: {self.summarized}'
 
 
 class Product(models.Model):
